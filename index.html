@@ -335,16 +335,24 @@
 
 <div class="container" id="main-form">
 
- <form name="pre-marriage-assessment" method="POST" data-netlify="true" netlify-honeypot="bot-field" id="assessment-form">
-  <input type="hidden" name="form-name" value="pre-marriage-assessment">
-    <p style="display:none"><input name="bot-field"></p>
-    <div id="questions-area"></div>
+ <form action="https://api.staticforms.dev/submit" method="POST">
+  <input type="hidden" name="apiKey" value="sf_6ec934ad1fec7dbafb131e71" />
+  <input type="hidden" name="subject" value="Designography Support submission" />
 
-    <div class="submit-section">
-      <p class="submit-note">Once you submit, your responses are safely recorded.</p>
-      <button type="submit" class="submit-btn" id="submit-btn">Submit my answers</button>
-    </div>
-  </form>
+  <label>Name
+    <input type="text" name="name" required />
+  </label>
+
+  <label>Email
+    <input type="email" name="email" required />
+  </label>
+
+  <label>Message
+    <textarea name="message" required></textarea>
+  </label>
+
+  <button type="submit">Send</button>
+</form>
 
 </div>
 
