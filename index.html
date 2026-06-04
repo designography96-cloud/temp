@@ -1,7 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
- <form name="contact" method="POST" data-netlify="true">
-  <input type="hidden" name="form-name" value="contact" />
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -337,8 +335,8 @@
 
 <div class="container" id="main-form">
 
-  <form name="pre-marriage-assessment" netlify netlify-honeypot="bot-field" id="assessment-form">
-    <input type="hidden" name="form-name" value="pre-marriage-assessment">
+ <form name="pre-marriage-assessment" method="POST" data-netlify="true" netlify-honeypot="bot-field" id="assessment-form">
+  <input type="hidden" name="form-name" value="pre-marriage-assessment">
     <p style="display:none"><input name="bot-field"></p>
     <div id="questions-area"></div>
 
