@@ -120,6 +120,49 @@
     padding: 3rem 1.5rem 5rem;
   }
 
+  /* Fixed User Identity Section */
+  .identity-fields {
+    background: white;
+    padding: 1.5rem;
+    border: 1px solid var(--sand);
+    border-radius: 12px;
+    margin-bottom: 3.5rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .identity-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .identity-group label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .identity-input {
+    width: 100%;
+    border: 1px solid var(--sand);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13.5px;
+    color: var(--dark);
+    background: var(--cream);
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .identity-input:focus {
+    outline: none;
+    border-color: var(--brown);
+    background: white;
+  }
+
   .section-block {
     margin-bottom: 3.5rem;
   }
@@ -315,6 +358,7 @@
   @media (max-width: 480px) {
     .hero { padding: 3rem 1.5rem 2.5rem; }
     .choice-btn { font-size: 12px; padding: 6px 13px; }
+    .identity-fields { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -334,26 +378,35 @@
 </div>
 
 <div class="container" id="main-form">
+  <!-- The main form element wraps around everything to ensure submissions happen smoothly -->
+  <form id="assessment-form" action="https://api.staticforms.dev/submit" method="POST">
+    
+    <!-- StaticForms Secret Directives -->
+    <input type="hidden" name="apiKey" value="sf_6ec934ad1fec7dbafb131e71" />
+    <input type="hidden" name="subject" value="Designography Personal Reflection Submission" />
 
- <form action="https://api.staticforms.dev/submit" method="POST">
-  <input type="hidden" name="apiKey" value="sf_6ec934ad1fec7dbafb131e71" />
-  <input type="hidden" name="subject" value="Designography Support submission" />
+    <!-- Beautiful user identifier block to fit your style -->
+    <div class="identity-fields">
+      <div class="identity-group">
+        <label>Your Name</label>
+        <input type="text" name="name" class="identity-input" required placeholder="Enter your full name">
+      </div>
+      <div class="identity-group">
+        <label>Your Email</label>
+        <input type="email" name="email" class="identity-input" required placeholder="name@example.com">
+      </div>
+    </div>
 
-  <label>Name
-    <input type="text" name="name" required />
-  </label>
+    <!-- JavaScript injects all 30 stylized questions here dynamically -->
+    <div id="questions-area"></div>
 
-  <label>Email
-    <input type="email" name="email" required />
-  </label>
+    <!-- Submit Section layout at the bottom of the form -->
+    <div class="submit-section">
+      <p class="submit-note">Please ensure you have answered the questions before sending.</p>
+      <button type="submit" class="submit-btn" id="submit-button">Submit Answers</button>
+    </div>
 
-  <label>Message
-    <textarea name="message" required></textarea>
-  </label>
-
-  <button type="submit">Send</button>
-</form>
-
+  </form>
 </div>
 
 <div class="thank-you" id="thank-you">
@@ -442,6 +495,8 @@ let totalQ = 0;
 
 function render() {
   const area = document.getElementById("questions-area");
+  if(!area) return;
+  
   let html = "";
   let qNum = 0;
   sections.forEach(sec => {
@@ -482,15 +537,15 @@ function pick(btn) {
   btn.classList.add("selected");
   answers[key] = btn.dataset.val;
 
-  const hidden = document.querySelector(`input[name="${key}"]`);
-  if (hidden) hidden.value = btn.dataset.val;
-  else {
-    const inp = document.createElement("input");
-    inp.type = "hidden";
-    inp.name = key;
-    inp.value = btn.dataset.val;
-    document.getElementById("assessment-form").appendChild(inp);
+  let hidden = document.querySelector(`input[id="hidden-${key}"]`);
+  if (!hidden) {
+    hidden = document.createElement("input");
+    hidden.type = "hidden";
+    hidden.id = `hidden-${key}`;
+    hidden.name = key;
+    document.getElementById("assessment-form").appendChild(hidden);
   }
+  hidden.value = btn.dataset.val;
   updateProgress();
 }
 
@@ -502,45 +557,62 @@ function typed(el) {
 function updateProgress() {
   const done = Object.values(answers).filter(v => v && v.length > 0).length;
   const pct = Math.round((done / totalQ) * 100);
-  document.getElementById("prog").style.width = pct + "%";
-  document.getElementById("prog-text").textContent = `${done} of ${totalQ} answered`;
-  document.getElementById("prog-pct").textContent = pct + "%";
+  
+  const progFill = document.getElementById("prog");
+  if(progFill) progFill.style.width = pct + "%";
+  
+  const progText = document.getElementById("prog-text");
+  if(progText) progText.textContent = `${done} of ${totalQ} answered`;
+  
+  const progPct = document.getElementById("prog-pct");
+  if(progPct) progPct.textContent = pct + "%";
 
   sections.forEach(sec => {
     const secDone = sec.questions.filter((q, qi) => {
       const v = answers[`${sec.id}_${qi}`];
       return v && v.length > 0;
-    }).length;
+    ).length;
     const badge = document.getElementById(`badge-${sec.id}`);
     if (badge) badge.textContent = `${secDone} / ${sec.questions.length}`;
   });
 }
 
+// Fixed Submit intercepts and seamlessly transfers tracking to StaticForms
 document.getElementById("assessment-form").addEventListener("submit", function(e) {
   e.preventDefault();
   
-  // 1. Package the form identifier along with all of your actual answers
-  const payload = {
-    "form-name": "pre-marriage-assessment",
-    ...responses
-  };
+  const form = this;
+  const button = document.getElementById("submit-button");
+  button.disabled = true;
+  button.textContent = "Sending...";
 
-  // 2. Convert and send the raw JavaScript data directly to Netlify
-  fetch("/", {
+  // Construct raw modern browser payload request instead of outdated configurations
+  const formData = new FormData(form);
+
+  fetch(form.action, {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams(payload).toString()
-  }).then(() => {
-    document.getElementById("main-form").style.display = "none";
-    document.getElementById("thank-you").style.display = "block";
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }).catch(() => {
-    document.getElementById("main-form").style.display = "none";
-    document.getElementById("thank-you").style.display = "block";
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    body: formData,
+    headers: {
+      'Accept': 'application/json'
+    }
+  })
+  .then(response => {
+    if (response.ok) {
+      document.getElementById("main-form").style.display = "none";
+      document.getElementById("thank-you").style.display = "block";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      alert("Something went wrong. Please check your data or try again.");
+      button.disabled = false;
+      button.textContent = "Submit Answers";
+    }
+  })
+  .catch(error => {
+    alert("Network error. Please check your connection.");
+    button.disabled = false;
+    button.textContent = "Submit Answers";
   });
 });
-
 
 render();
 </script>
