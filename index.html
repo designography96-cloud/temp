@@ -267,6 +267,36 @@ document.getElementById("assessment-form").addEventListener("submit", function(e
   e.preventDefault();
   var form = this;
   var button = document.getElementById("submit-button");
+  var nameVal = form.querySelector('[name="name"]').value;
+  var emailVal = form.querySelector('[name="email"]').value;
+
+  // Build readable message
+  var lines = [];
+  lines.push("Name: " + nameVal);
+  lines.push("Email: " + emailVal);
+  lines.push("");
+  sections.forEach(function(sec) {
+    lines.push("== " + sec.name.toUpperCase() + " ==");
+    sec.questions.forEach(function(q, qi) {
+      var key = sec.id + "_" + qi;
+      var ans = answers[key] || "(not answered)";
+      lines.push("Q: " + q.q);
+      lines.push("A: " + ans);
+      lines.push("");
+    });
+  });
+
+  // Inject as message field
+  var msgField = document.getElementById("formatted-message");
+  if (!msgField) {
+    msgField = document.createElement("input");
+    msgField.type = "hidden";
+    msgField.id = "formatted-message";
+    msgField.name = "message";
+    form.appendChild(msgField);
+  }
+  msgField.value = lines.join("\n");
+
   button.disabled = true;
   button.textContent = "Sending...";
   var formData = new FormData(form);
